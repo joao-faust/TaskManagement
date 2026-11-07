@@ -1,0 +1,294 @@
+{
+  "info": {
+    "name": "TaskManagement API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Configure email e password com dados de teste, crie o usuário e autentique-se. O login salva token automaticamente; a criação de tarefa salva dutyId pelo header Location. Execute exclusões manualmente ao finalizar. baseUrl usa o perfil HTTPS; para o perfil HTTP, use http://localhost:5234."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7174",
+      "type": "string"
+    },
+    {
+      "key": "userName",
+      "value": "Usuário de teste",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dutyId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Usuários",
+      "item": [
+        {
+          "name": "Criar usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "description": "Retorna 201 sem corpo.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Autenticar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/tokens",
+            "description": "Retorna 200 com token JWT; credenciais inválidas retornam 401.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.token) pm.collectionVariables.set('token', data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Usuário autenticado",
+      "item": [
+        {
+          "name": "Consultar perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/authenticated",
+            "description": "Retorna 200 com id, name e email."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/authenticated",
+            "description": "Atualiza nome, e-mail e senha. Retorna 204.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/authenticated",
+            "description": "Exclui o usuário autenticado. Retorna 204. Execute ao finalizar os testes."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tarefas",
+      "item": [
+        {
+          "name": "Criar tarefa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/duties",
+            "description": "Retorna 201 sem corpo com header Location.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Estudar ASP.NET Core\",\n  \"description\": \"Revisar os endpoints da API.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const location = pm.response.headers.get('Location');",
+                  "    if (location) pm.collectionVariables.set('dutyId', location.split('?')[0].split('/').filter(Boolean).pop());",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar tarefas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/duties",
+            "description": "Retorna 200 com as tarefas do usuário autenticado."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar tarefa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/duties/{{dutyId}}",
+            "description": "Retorna 200 com os detalhes da tarefa."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar tarefa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/duties/{{dutyId}}",
+            "description": "Permite editar tarefas pendentes ou em andamento. Retorna 204.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Estudar ASP.NET Core\",\n  \"description\": \"Revisar os endpoints da API.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/duties/{{dutyId}}/status",
+            "description": "Status numérico: 0=Pending, 1=InProgress, 2=Concluded, 3=Canceled. Transições permitidas: 0 para 1/3; 1 para 2/3; 2 para 0; 3 para 0. Para cancelar, informe cancellationReason. Retorna 204.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1,\n  \"cancellationReason\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir tarefa",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/duties/{{dutyId}}",
+            "description": "Permite excluir tarefas pendentes ou canceladas. Retorna 204."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
